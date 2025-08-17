@@ -7,7 +7,7 @@ use crate::{DeliveryError, DeliveryInterface};
 use alloy_network::EthereumWallet;
 use alloy_primitives::{Address, FixedBytes, U256};
 use alloy_provider::{Provider, ProviderBuilder};
-use alloy_rpc_types::TransactionRequest;
+use alloy_rpc_types::{BlockId, BlockNumberOrTag, TransactionRequest};
 use alloy_signer::Signer;
 use alloy_signer_local::PrivateKeySigner;
 use alloy_transport_http::Http;
@@ -434,8 +434,11 @@ impl DeliveryInterface for AlloyDelivery {
 
 		let provider = self.get_provider(chain_id)?;
 
+		// CRITICAL FIX: Use pending block to include unconfirmed transactions
+		// This prevents nonce collisions when sending multiple transactions quickly
 		provider
 			.get_transaction_count(address)
+			.block_id(BlockId::Number(BlockNumberOrTag::Pending))
 			.await
 			.map_err(|e| DeliveryError::Network(format!("Failed to get nonce: {}", e)))
 	}
